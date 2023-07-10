@@ -1,0 +1,29 @@
+1.git clone link
+2.cd file er modde jeye 
+3.code .
+4.composer install
+5..env nam dibo
+6.php artisan key:generate
+
+7.php artisan serve
+8.(model create )>php artisan make:model Book
+9.controller>php artisan make:controller BookController
+10.resources>views>books er moddhe index.blade.php create korbo
+11.php artisan migrate
+12.php artisan make:migration create_books_table
+je migration create korlam tar modde ei field ghula likhte hobe
+	$table->string("title");
+            $table->string("author");
+            $table->integer("price");
+            $table->string("isbn");
+13.php artisan migrate
+14.database e jeye table create kore aste hobe 
+
+
+sob edit kora por seeder asbe 
+command line ebar>>php artisan make:factory  BookFactory  --model=Book
+then 
+php artisan make:seeder BookSeeder
+
+>>>file edit korar por command abr
+php artisan db:seed
