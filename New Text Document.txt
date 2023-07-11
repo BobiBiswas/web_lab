@@ -1,29 +1,425 @@
-1.git clone link
-2.cd file er modde jeye 
-3.code .
-4.composer install
-5..env nam dibo
-6.php artisan key:generate
+1.............>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+def compress(input_file, output_file):
+    with open(input_file, 'r') as file_in:
+        text = file_in.read()
+    compressed_text = ''
+    count = 1
+    current_char = text[0]
+    for i in range(1, len(text)):
+        if text[i] == current_char:
+            count += 1
+        else:
+            compressed_text += str(count) + current_char
+            current_char = text[i]
+            count = 1
+    compressed_text += str(count) + current_char
+    with open(output_file, 'w') as file_out:
+        file_out.write(compressed_text)
 
-7.php artisan serve
-8.(model create )>php artisan make:model Book
-9.controller>php artisan make:controller BookController
-10.resources>views>books er moddhe index.blade.php create korbo
-11.php artisan migrate
-12.php artisan make:migration create_books_table
-je migration create korlam tar modde ei field ghula likhte hobe
-	$table->string("title");
-            $table->string("author");
-            $table->integer("price");
-            $table->string("isbn");
-13.php artisan migrate
-14.database e jeye table create kore aste hobe 
+def decompress(input_file, output_file):
+    with open(input_file, 'r') as file_in:
+        text = file_in.read()
+    decompressed_text = ''
+    count = ''
+    for char in text:
+        if char.isdigit():
+            count += char
+        else:
+            decompressed_text += int(count) * char
+            count = ''
+    with open(output_file, 'w') as file_out:
+        file_out.write(decompressed_text)
+
+import os
+
+def check_file_size(file_path):
+    return os.path.getsize(file_path)        
+
+input_file = "input.txt"
+compressed_file = "compressed.txt"
+compress(input_file, compressed_file)
+
+decompressed_file = "decompressed.txt"
+decompress(compressed_file, decompressed_file)
+
+input_file_size = check_file_size(input_file)
+compressed_file_size = check_file_size(compressed_file)
+decompressed_file_size = check_file_size(decompressed_file)
+
+print("Size of input file:", input_file_size, "bytes")
+print("Size of compressed file:", compressed_file_size, "bytes")
+print("Size of decompressed file:", decompressed_file_size, "bytes")
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+2...........................................................
+def encode_LZW(input_file_path, output_file_path):
+    with open(input_file_path, 'r') as input_file, open(output_file_path, 'w') as output_file:
+        # Initialize the dictionary with ASCII codes
+        dictionary = {chr(i): i for i in range(256)}
+        print(dictionary)
+        next_code = 256
+
+        # Read the input data
+        data = input_file.read()
+
+        # Initialize variables for encoding
+        current_str = ""
+        encoded_data = []
+        for ch in data:
+            new_str = current_str + ch
+            if new_str in dictionary:
+                current_str = new_str
+            else:
+                encoded_data.append(dictionary[current_str])
+                dictionary[new_str] = next_code
+                next_code += 1
+                current_str = ch
+        encoded_data.append(dictionary[current_str])
+
+        # Write the encoded data to the output file
+        output_file.write(" ".join(str(code) for code in encoded_data))
+
+def decode_LZW(input_file_path, output_file_path):
+    with open(input_file_path, 'r') as input_file, open(output_file_path, 'w') as output_file:
+        # Initialize the dictionary with ASCII codes
+        dictionary = {i: chr(i) for i in range(256)}
+        next_code = 256
+
+        # Read the encoded data
+        encoded_data = input_file.read().split()
+
+        # Initialize variables for decoding
+        current_str = dictionary[int(encoded_data[0])]
+        decoded_data = current_str
+        for code in encoded_data[1:]:
+            if int(code) in dictionary:
+                new_str = dictionary[int(code)]
+            # else:
+            #     new_str = current_str + current_str[0]
+            decoded_data += new_str
+            print(decoded_data)
+            dictionary[next_code] = current_str + new_str[0]
+            next_code += 1
+            current_str = new_str
+
+        # Write the decoded data to the output file
+        output_file.write(decoded_data)
 
 
-sob edit kora por seeder asbe 
-command line ebar>>php artisan make:factory  BookFactory  --model=Book
-then 
-php artisan make:seeder BookSeeder
 
->>>file edit korar por command abr
-php artisan db:seed
+input_file_path = "input.txt"
+encoded_file_path = "encoded.txt"
+decoded_file_path = "decoded.txt"
+
+encode_LZW(input_file_path, encoded_file_path)
+decode_LZW(encoded_file_path, decoded_file_path)
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
+3................................arithematic
+
+from decimal import Decimal, getcontext
+from collections import Counter
+
+# Set decimal precision
+getcontext().prec = 30
+
+def generate_probability_range(symbols):
+    total_count = len(symbols)
+    symbol_count = Counter(symbols)
+    prob_range = {}
+    low = Decimal(0)
+    for symbol, count in symbol_count.items():
+        prob = Decimal(count) / Decimal(total_count)
+        high = low + prob
+        prob_range[symbol] = (low, high)
+        #print(symbol,prob_range[symbol])
+        low = high
+    return prob_range
+
+def encode(symbols, prob_range):
+    low = Decimal(0)
+    high = Decimal(1)
+    for symbol in symbols:
+        symbol_low, symbol_high = prob_range[symbol]
+        range_width = high - low
+        high = low + range_width * symbol_high
+        low = low + range_width * symbol_low
+        print(symbol, low, high)
+    return (low, high)
+
+def decode(encoded_message, prob_range, message_length):
+    low, high = encoded_message
+    message = ""
+    print(prob_range.items())
+    for i in range(message_length):
+        for symbol, symbol_range in prob_range.items():
+            symbol_low, symbol_high = symbol_range
+            symbol_width = symbol_high - symbol_low
+            if low >= symbol_low and high <= symbol_high:
+                message += symbol
+                high = (high - symbol_low) / symbol_width
+                low = (low - symbol_low) / symbol_width
+                break
+    return message
+
+# Read input from file
+with open("input.txt", "r") as f:
+    input_string = f.read()
+
+# Generate probability range
+prob_range = generate_probability_range(input_string)
+
+# Encode input string
+encoded_message = encode(input_string, prob_range)
+
+# Decode encoded message
+decoded_message = decode(encoded_message, prob_range, len(input_string))
+
+# Write encoded message to file
+with open("encoded.txt", "w") as f:
+    f.write(str(encoded_message))
+
+# Write decoded message to file
+with open("decoded.txt", "w") as f:
+    f.write(decoded_message)
+
+>>>>>>>>>>>>>
+
+4.huffman
+
+from heapq import heappush, heappop
+from collections import Counter
+
+class Node:
+    #constructor method
+    def __init__(self, symbol=None, freq=0, left=None, right=None):
+        self.symbol = symbol
+        self.freq = freq
+        self.left = left
+        self.right = right
+        
+    #less than operator method
+    def __lt__(self, other):
+        return self.freq < other.freq
+        
+def generate_frequency_table(symbols):
+    symbol_count = Counter(symbols)
+    total_count = len(symbols)
+    frequency_table = []
+    for symbol, count in symbol_count.items():
+        probability = count / total_count
+        node = Node(symbol, probability)
+        frequency_table.append(node)
+
+    #print the frequency table
+    print("Frequency Table")
+    for node in frequency_table:
+        print(node.symbol, node.freq)
+
+    return frequency_table
+    
+def build_huffman_tree(frequency_table):
+    heap = frequency_table[:]
+
+    
+    while len(heap) > 1:
+        left = heappop(heap)
+        right = heappop(heap)
+
+        print("Left and Right")
+        print(left.symbol, left.freq)
+        print(right.symbol, right.freq)
+
+        parent = Node(freq=left.freq+right.freq, left=left, right=right)
+        heappush(heap, parent)
+
+        # #print the HEAP
+        # print("Frequency heap")
+        # for node in heap:
+        #     print(node.symbol, node.freq)
+
+    return heap[0]
+
+def generate_codewords(root):
+    codewords = {}
+    stack = [(root, "")]
+    while stack:
+        node, code = stack.pop()
+        if node.symbol:
+            codewords[node.symbol] = code
+        if node.left:
+            stack.append((node.left, code + "0")) 
+        if node.right:
+            stack.append((node.right, code + "1"))
+    return codewords
+
+def encode(symbols, codewords):
+    encoded_message = ""
+    for symbol in symbols:
+        encoded_message += codewords[symbol]
+    return encoded_message
+
+
+
+def decode(encoded_message, root):
+    decoded_message = ""
+    node = root
+    for bit in encoded_message:
+        if bit == "0":
+            node = node.left
+        else:
+            node = node.right
+        if node.symbol:
+            decoded_message += node.symbol
+            node = root
+    return decoded_message
+
+# Read input from file
+with open("input.txt", "r") as f:
+    input_string = f.read()
+
+# Generate frequency table
+frequency_table = generate_frequency_table(input_string)
+
+# Build Huffman tree
+root = build_huffman_tree(frequency_table)
+
+# Generate codewords
+codewords = generate_codewords(root)
+
+# Encode input string
+encoded_message = encode(input_string, codewords)
+
+# Decode encoded message
+decoded_message = decode(encoded_message, root)
+
+# Write codewords to file
+with open("codewords.txt", "w") as f:
+    for symbol, codeword in codewords.items():
+        f.write(f"{symbol}: {codeword}\n")
+
+# Write encoded message to file
+with open("encoded.txt", "w") as f:
+    f.write(encoded_message)
+
+# Write decoded message to file
+with open("decoded.txt", "w") as f:
+    f.write(decoded_message)
+
+>>>>>>>>>>>>>>
+
+5.d...........................dct
+import numpy as np
+from scipy.fftpack import dct, idct
+import matplotlib.pyplot as plt
+
+# Generate a random gray level image of size 16x16
+image = np.random.randint(0, 256, size=(16, 16))
+
+# Apply DCT on the image
+dct_image = dct(dct(image.T, norm='ortho').T, norm='ortho')
+
+# Plot the transformed image
+plt.figure()
+plt.imshow(dct_image, cmap='gray')
+plt.title('DCT Transformed Image')
+plt.show()
+
+# Apply IDCT on the transformed image
+idct_image = idct(idct(dct_image.T, norm='ortho').T, norm='ortho')
+
+# Plot the reconstructed image
+plt.figure()
+plt.imshow(idct_image, cmap='gray')
+plt.title('IDCT Reconstructed Image')
+plt.show()
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+import numpy as np
+import matplotlib.pyplot as plt
+import cv2
+
+def apply_dct(image):
+    height, width = image.shape
+    transformed_image = np.zeros((height, width))
+
+    for i in range(0, height, 16):
+        for j in range(0, width, 16):
+            block = image[i:i+16, j:j+16]
+            dct_block = cv2.dct(block.astype(np.float32))
+            transformed_image[i:i+16, j:j+16] = dct_block
+
+    return transformed_image
+
+def apply_idct(transformed_image):
+    height, width = transformed_image.shape
+    reconstructed_image = np.zeros((height, width))
+
+    for i in range(0, height, 16):
+        for j in range(0, width, 16):
+            transformed_block = transformed_image[i:i+16, j:j+16]
+            idct_block = cv2.idct(transformed_block.astype(np.float32))
+            reconstructed_image[i:i+16, j:j+16] = idct_block
+
+    return reconstructed_image
+
+# Load the grayscale image
+image = cv2.imread('gray_image.png', cv2.IMREAD_GRAYSCALE)
+
+# Apply DCT
+transformed_image = apply_dct(image)
+
+# Apply IDCT
+reconstructed_image = apply_idct(transformed_image)
+print(np.size(transformed_image),np.size(reconstructed_image))
+# Plot the transformed and reconstructed images
+plt.subplot(1, 2, 1)
+plt.imshow(transformed_image, cmap='gray')
+plt.title('Transformed Image')
+
+plt.subplot(1, 2, 2)
+plt.imshow(reconstructed_image, cmap='gray')
+plt.title('Reconstructed Image')
+
+plt.show()
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+import numpy as np
+import matplotlib.pyplot as plt
+import cv2
+from scipy.fftpack import dct, idct
+
+def dct_2d(image):
+    return dct(dct(image.T, norm='ortho').T, norm='ortho')
+
+def idct_2d(image):
+    return idct(idct(image.T, norm='ortho').T, norm='ortho')
+
+# Define a grayscale image of size 16x16
+image = plt.imread("img.jpg", format='gray')
+image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+img2 = np.copy(image)
+
+# img2.resize((16,16))
+plt.imshow(img2, cmap='gray')
+plt.title("Original Image")
+plt.show()
+# Apply DCT on the image
+dct_image = dct_2d(img2)
+
+# Plot the transformed image
+plt.imshow(dct_image, cmap='gray')
+plt.title("DCT Transformed Image")
+plt.show()
+
+# Apply IDCT on the transformed image
+idct_image = idct_2d(dct_image)
+
+# Plot the resulting image
+plt.imshow(idct_image, cmap='gray')
+plt.title("IDCT Transformed Image")
+plt.show()
